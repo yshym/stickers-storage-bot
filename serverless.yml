@@ -1,0 +1,24 @@
+service: stickers-storage-bot
+
+provider:
+  name: aws
+  runtime: go1.x
+  environment:
+    TELEGRAM_TOKEN: ${file(./serverless.env.yml):TELEGRAM_TOKEN, ''}
+
+functions:
+  webhook:
+    handler: bin/webhook
+    events:
+      - http: POST /
+
+  setWebhook:
+    handler: bin/setwebhook
+    events:
+      - http: POST /set-webhook
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**

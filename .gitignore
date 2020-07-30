@@ -5,3 +5,12 @@ tmp/
 
 # direnv
 .envrc
+
+# Binary executables
+bin/
+
+# Environment variables for serverless framework
+serverless.env.yml
+
+# Deployment artifacts
+.serverless/
