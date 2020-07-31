@@ -54,6 +54,33 @@ func getUser(ID int) (User, error) {
 	return user, nil
 }
 
+func addStickerIDs(ID int, stickerIDs []string) error {
+	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
+
+	client := dynamodb.New(sess)
+
+	_, err := client.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":i": {
+				SS: aws.StringSlice(stickerIDs),
+			},
+		},
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				N: aws.String(strconv.Itoa(ID)),
+			},
+		},
+		ReturnValues:     aws.String("UPDATED_NEW"),
+		UpdateExpression: aws.String("ADD StickerIDs :i"),
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 var (
 	okResp = apigateway.Response{
 		StatusCode:      200,
@@ -76,6 +103,13 @@ func handler(
 	bodyUnmarshalErr := json.Unmarshal([]byte(request.Body), &update)
 	if bodyUnmarshalErr != nil {
 		log.Panic(bodyUnmarshalErr)
+	}
+
+	if update.Message != nil {
+		userID := update.Message.From.ID
+		stickerID := update.Message.Sticker.FileID
+
+		addStickerIDs(userID, []string{stickerID})
 	}
 
 	if update.InlineQuery == nil {
