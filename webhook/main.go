@@ -4,12 +4,55 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
 )
+
+// User provides data of users table item
+type User struct {
+	ID         int
+	StickerIDs []string
+}
+
+func getUser(ID int) (User, error) {
+	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
+
+	client := dynamodb.New(sess)
+
+	user := User{}
+
+	result, err := client.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
+		Key: map[string]*dynamodb.AttributeValue{
+			"ID": {
+				N: aws.String(strconv.Itoa(ID)),
+			},
+		},
+	})
+	if err != nil {
+		return user, err
+	}
+
+	// Return empty slice of stickers if item does not exist
+	if result.Item == nil {
+		return User{ID: ID, StickerIDs: []string{}}, nil
+	}
+
+	err = dynamodbattribute.UnmarshalMap(result.Item, &user)
+	if err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
 
 var (
 	okResp = apigateway.Response{
@@ -39,17 +82,32 @@ func handler(
 		return okResp, nil
 	}
 
+	// Make Query not empty
 	update.InlineQuery.Query = "-"
 
-	sticker := tgbotapi.NewInlineQueryResultCachedSticker(
-		"sticker1",
-		"CAACAgQAAxkBAAMIXyGRJmVyxqSoowUUBy1HqT_SGKAAAgUAA6MaLxnmpO8KYecXHxoE",
-		"doge",
-	)
+	userID := update.InlineQuery.From.ID
+
+	user, err := getUser(userID)
+	if err != nil {
+		return badResp, err
+	}
+	stickerIDs := user.StickerIDs
+	resultCachedStickers := []interface{}{}
+
+	for i, stickerID := range stickerIDs {
+		resultCachedStickers = append(
+			resultCachedStickers,
+			tgbotapi.NewInlineQueryResultCachedSticker(
+				strconv.Itoa(i),
+				stickerID,
+				"sticker",
+			),
+		)
+	}
 
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: update.InlineQuery.ID,
-		Results:       []interface{}{sticker},
+		Results:       resultCachedStickers,
 	}
 
 	if _, err := bot.AnswerInlineQuery(inlineConf); err != nil {
