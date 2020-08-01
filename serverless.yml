@@ -6,7 +6,7 @@ provider:
   runtime: go1.x
   environment:
     TELEGRAM_TOKEN: ${file(./serverless.env.yml):TELEGRAM_TOKEN, ''}
-    DYNAMODB_TABLE: ${self:service}-users
+    DYNAMODB_TABLE: ${self:service}-stickers
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -21,16 +21,34 @@ provider:
 
 resources:
   Resources:
-    usersTable:
+    stickersTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:provider.environment.DYNAMODB_TABLE}
         AttributeDefinitions:
-          - AttributeName: ID
+          - AttributeName: UserID
             AttributeType: N
+          - AttributeName: FileUniqueID
+            AttributeType: S
+          - AttributeName: FileID
+            AttributeType: S
         KeySchema:
-          - AttributeName: ID
+          - AttributeName: UserID
             KeyType: HASH
+          - AttributeName: FileUniqueID
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: FileUniqueIDIndex
+            KeySchema:
+              - AttributeName: FileUniqueID
+                KeyType: HASH
+              - AttributeName: FileID
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

@@ -16,69 +16,69 @@ import (
 	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
 )
 
-// User provides data of users table item
-type User struct {
-	ID         int
-	StickerIDs []string
+// Sticker provides info about sticker
+type Sticker struct {
+	UserID       int
+	FileUniqueID string
+	FileID       string
 }
 
-func getUser(ID int) (User, error) {
+func getStickers(userID int) ([]Sticker, error) {
 	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
 
 	client := dynamodb.New(sess)
 
-	user := User{}
+	stickers := []Sticker{}
 
-	result, err := client.GetItem(&dynamodb.GetItemInput{
+	result, err := client.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
-		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				N: aws.String(strconv.Itoa(ID)),
+		KeyConditions: map[string]*dynamodb.Condition{
+			"UserID": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						N: aws.String(strconv.Itoa(userID)),
+					},
+				},
 			},
 		},
 	})
 	if err != nil {
-		return user, err
+		return stickers, err
 	}
 
 	// Return empty slice of stickers if item does not exist
-	if result.Item == nil {
-		return User{ID: ID, StickerIDs: []string{}}, nil
+	if result.Items == nil {
+		return stickers, nil
 	}
 
-	err = dynamodbattribute.UnmarshalMap(result.Item, &user)
+	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &stickers)
 	if err != nil {
-		return user, err
+		return stickers, err
 	}
 
-	return user, nil
+	return stickers, nil
 }
 
-func addStickerIDs(ID int, stickerIDs []string) error {
+func (sticker Sticker) put() error {
 	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
 
 	client := dynamodb.New(sess)
 
-	_, err := client.UpdateItem(&dynamodb.UpdateItemInput{
+	stickerItem, err := dynamodbattribute.MarshalMap(sticker)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":i": {
-				SS: aws.StringSlice(stickerIDs),
-			},
-		},
-		Key: map[string]*dynamodb.AttributeValue{
-			"ID": {
-				N: aws.String(strconv.Itoa(ID)),
-			},
-		},
-		ReturnValues:     aws.String("UPDATED_NEW"),
-		UpdateExpression: aws.String("ADD StickerIDs :i"),
+		Item:      stickerItem,
 	})
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 var (
@@ -105,11 +105,18 @@ func handler(
 		log.Panic(bodyUnmarshalErr)
 	}
 
-	if update.Message != nil {
-		userID := update.Message.From.ID
-		stickerID := update.Message.Sticker.FileID
+	message := update.Message
+	if message != nil {
+		sticker := Sticker{
+			UserID:       message.From.ID,
+			FileUniqueID: message.Sticker.FileUniqueID,
+			FileID:       message.Sticker.FileID,
+		}
 
-		addStickerIDs(userID, []string{stickerID})
+		err = sticker.put()
+		if err != nil {
+			return badResp, err
+		}
 	}
 
 	if update.InlineQuery == nil {
@@ -121,19 +128,18 @@ func handler(
 
 	userID := update.InlineQuery.From.ID
 
-	user, err := getUser(userID)
+	stickers, err := getStickers(userID)
 	if err != nil {
 		return badResp, err
 	}
-	stickerIDs := user.StickerIDs
 	resultCachedStickers := []interface{}{}
 
-	for i, stickerID := range stickerIDs {
+	for i, sticker := range stickers {
 		resultCachedStickers = append(
 			resultCachedStickers,
 			tgbotapi.NewInlineQueryResultCachedSticker(
 				strconv.Itoa(i),
-				stickerID,
+				sticker.FileID,
 				"sticker",
 			),
 		)
