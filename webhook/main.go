@@ -13,15 +13,6 @@ import (
 	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
 )
 
-var (
-	okResp = apigateway.Response{
-		StatusCode:      200,
-		IsBase64Encoded: false,
-		Body:            "Ok",
-	}
-	badResp = apigateway.Response{StatusCode: 404}
-)
-
 func handler(
 	request events.APIGatewayProxyRequest,
 ) (apigateway.Response, error) {
@@ -47,12 +38,12 @@ func handler(
 
 		err = sticker.Put()
 		if err != nil {
-			return badResp, err
+			return apigateway.Response404, err
 		}
 	}
 
 	if update.InlineQuery == nil {
-		return okResp, nil
+		return apigateway.Response200, nil
 	}
 
 	// Make Query not empty
@@ -62,7 +53,7 @@ func handler(
 
 	stickers, err := stickers.GetStickers(userID)
 	if err != nil {
-		return badResp, err
+		return apigateway.Response404, err
 	}
 	resultCachedStickers := []interface{}{}
 
@@ -86,7 +77,7 @@ func handler(
 		log.Println(err)
 	}
 
-	return okResp, nil
+	return apigateway.Response200, nil
 }
 
 func main() {
