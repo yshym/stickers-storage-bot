@@ -8,78 +8,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
+	"github.com/yevhenshymotiuk/stickers-storage-bot/webhook/stickers"
 )
-
-// Sticker provides info about sticker
-type Sticker struct {
-	UserID       int
-	FileUniqueID string
-	FileID       string
-}
-
-func getStickers(userID int) ([]Sticker, error) {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
-	stickers := []Sticker{}
-
-	result, err := client.Query(&dynamodb.QueryInput{
-		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
-		KeyConditions: map[string]*dynamodb.Condition{
-			"UserID": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						N: aws.String(strconv.Itoa(userID)),
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		return stickers, err
-	}
-
-	// Return empty slice of stickers if item does not exist
-	if result.Items == nil {
-		return stickers, nil
-	}
-
-	err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &stickers)
-	if err != nil {
-		return stickers, err
-	}
-
-	return stickers, nil
-}
-
-func (sticker Sticker) put() error {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
-	stickerItem, err := dynamodbattribute.MarshalMap(sticker)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.PutItem(&dynamodb.PutItemInput{
-		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
-		Item:      stickerItem,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 var (
 	okResp = apigateway.Response{
@@ -107,13 +39,13 @@ func handler(
 
 	message := update.Message
 	if message != nil {
-		sticker := Sticker{
+		sticker := stickers.Sticker{
 			UserID:       message.From.ID,
 			FileUniqueID: message.Sticker.FileUniqueID,
 			FileID:       message.Sticker.FileID,
 		}
 
-		err = sticker.put()
+		err = sticker.Put()
 		if err != nil {
 			return badResp, err
 		}
@@ -128,7 +60,7 @@ func handler(
 
 	userID := update.InlineQuery.From.ID
 
-	stickers, err := getStickers(userID)
+	stickers, err := stickers.GetStickers(userID)
 	if err != nil {
 		return badResp, err
 	}
