@@ -8,9 +8,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/webhook/stickers"
+	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
 )
 
 var (
