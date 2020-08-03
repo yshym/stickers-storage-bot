@@ -1,0 +1,5 @@
+#+TITLE: stickers-storage-bot
+
+#+BEGIN_QUOTE
+Store all your favourite stickers in one place
+#+END_QUOTE
