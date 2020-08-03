@@ -30,13 +30,23 @@ func handler(
 
 	message := update.Message
 	if message != nil {
+		userID := message.From.ID
 		sticker := stickers.Sticker{
-			UserID:       message.From.ID,
+			UserID:       userID,
 			FileUniqueID: message.Sticker.FileUniqueID,
 			FileID:       message.Sticker.FileID,
 		}
 
-		err = sticker.Put()
+		stickerBelongsToUser, err := sticker.BelongsToUser(userID)
+		if err != nil {
+			return apigateway.Response404, err
+		}
+
+		if stickerBelongsToUser {
+			err = sticker.Delete()
+		} else {
+			err = sticker.Put()
+		}
 		if err != nil {
 			return apigateway.Response404, err
 		}

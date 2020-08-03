@@ -17,7 +17,7 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      Resource: "arn:aws:dynamodb:*:*:table/*"
 
 resources:
   Resources:
@@ -30,8 +30,6 @@ resources:
             AttributeType: N
           - AttributeName: FileUniqueID
             AttributeType: S
-          - AttributeName: FileID
-            AttributeType: S
         KeySchema:
           - AttributeName: UserID
             KeyType: HASH
@@ -42,7 +40,7 @@ resources:
             KeySchema:
               - AttributeName: FileUniqueID
                 KeyType: HASH
-              - AttributeName: FileID
+              - AttributeName: UserID
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
