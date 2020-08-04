@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"strconv"
 
@@ -18,14 +17,14 @@ func handler(
 ) (apigateway.Response, error) {
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))
 	if err != nil {
-		log.Panic(err)
+		return apigateway.Response404, err
 	}
 
 	update := tgbotapi.Update{}
 
-	bodyUnmarshalErr := json.Unmarshal([]byte(request.Body), &update)
-	if bodyUnmarshalErr != nil {
-		log.Panic(bodyUnmarshalErr)
+	err = json.Unmarshal([]byte(request.Body), &update)
+	if err != nil {
+		return apigateway.Response404, err
 	}
 
 	client, err := db.NewClient()
@@ -89,7 +88,7 @@ func handler(
 	}
 
 	if _, err := bot.AnswerInlineQuery(inlineConf); err != nil {
-		log.Println(err)
+		return apigateway.Response404, err
 	}
 
 	return apigateway.Response200, nil
