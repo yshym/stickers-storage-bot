@@ -1,4 +1,4 @@
-package stickers
+package db
 
 import (
 	"os"
@@ -10,17 +10,27 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-// TODO: Optimize session usage
+// Client provides DynamoDB client data
+type Client struct {
+	DB *dynamodb.DynamoDB
+}
+
+// NewClient insantiates new DynamoDB client
+func NewClient() (*Client, error) {
+	sess, err := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
+	if err != nil {
+		return &Client{}, err
+	}
+	database := dynamodb.New(sess)
+
+	return &Client{DB: database}, nil
+}
 
 // GetStickers gets a list of stickers by user id
-func GetStickers(userID int) ([]Sticker, error) {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
+func (client *Client) GetStickers(userID int) ([]Sticker, error) {
 	stickers := []Sticker{}
 
-	result, err := client.Query(&dynamodb.QueryInput{
+	result, err := client.DB.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		KeyConditions: map[string]*dynamodb.Condition{
 			"UserID": {
@@ -50,18 +60,14 @@ func GetStickers(userID int) ([]Sticker, error) {
 	return stickers, nil
 }
 
-// Put inserts a sticker into table
-func (sticker Sticker) Put() error {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
+// PutSticker inserts a sticker into table
+func (client *Client) PutSticker(sticker Sticker) error {
 	stickerItem, err := dynamodbattribute.MarshalMap(sticker)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.PutItem(&dynamodb.PutItemInput{
+	_, err = client.DB.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		Item:      stickerItem,
 	})
@@ -72,13 +78,9 @@ func (sticker Sticker) Put() error {
 	return nil
 }
 
-// BelongsToUser checks if user has a sticker
-func (sticker Sticker) BelongsToUser(userID int) (bool, error) {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
-	result, err := client.Query(&dynamodb.QueryInput{
+// StickerBelongsToUser checks if user has a sticker
+func (client *Client) StickerBelongsToUser(userID int, sticker Sticker) (bool, error) {
+	result, err := client.DB.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		IndexName: aws.String("FileUniqueIDIndex"),
 		KeyConditions: map[string]*dynamodb.Condition{
@@ -107,13 +109,9 @@ func (sticker Sticker) BelongsToUser(userID int) (bool, error) {
 	return len(result.Items) != 0, nil
 }
 
-// Delete removes a sticker
-func (sticker Sticker) Delete() error {
-	sess, _ := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
-
-	client := dynamodb.New(sess)
-
-	_, err := client.DeleteItem(&dynamodb.DeleteItemInput{
+// DeleteSticker removes a sticker
+func (client *Client) DeleteSticker(sticker Sticker) error {
+	_, err := client.DB.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		Key: map[string]*dynamodb.AttributeValue{
 			"UserID": {

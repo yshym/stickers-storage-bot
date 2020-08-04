@@ -1,5 +1,5 @@
-// Package stickers provides operations on stickers data
-package stickers
+// Package db provides database operations and data structures
+package db
 
 // Sticker provides info about sticker
 type Sticker struct {

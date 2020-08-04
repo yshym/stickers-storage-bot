@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/yevhenshymotiuk/stickers-storage-bot/webhook/stickers"
+	"github.com/yevhenshymotiuk/stickers-storage-bot/webhook/db"
 	"github.com/yevhenshymotiuk/telegram-lambda-helpers/apigateway"
 )
 
@@ -28,24 +28,29 @@ func handler(
 		log.Panic(bodyUnmarshalErr)
 	}
 
+	client, err := db.NewClient()
+	if err != nil {
+		return apigateway.Response404, err
+	}
+
 	message := update.Message
 	if message != nil {
 		userID := message.From.ID
-		sticker := stickers.Sticker{
+		sticker := db.Sticker{
 			UserID:       userID,
 			FileUniqueID: message.Sticker.FileUniqueID,
 			FileID:       message.Sticker.FileID,
 		}
 
-		stickerBelongsToUser, err := sticker.BelongsToUser(userID)
+		stickerBelongsToUser, err := client.StickerBelongsToUser(userID, sticker)
 		if err != nil {
 			return apigateway.Response404, err
 		}
 
 		if stickerBelongsToUser {
-			err = sticker.Delete()
+			err = client.DeleteSticker(sticker)
 		} else {
-			err = sticker.Put()
+			err = client.PutSticker(sticker)
 		}
 		if err != nil {
 			return apigateway.Response404, err
@@ -61,7 +66,7 @@ func handler(
 
 	userID := update.InlineQuery.From.ID
 
-	stickers, err := stickers.GetStickers(userID)
+	stickers, err := client.GetStickers(userID)
 	if err != nil {
 		return apigateway.Response404, err
 	}
