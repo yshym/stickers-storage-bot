@@ -1,0 +1,49 @@
+{
+    "TableName": "stickers",
+    "AttributeDefinitions": [
+        {
+            "AttributeName": "UserID",
+            "AttributeType": "N"
+        },
+        {
+            "AttributeName": "FileUniqueID",
+            "AttributeType": "S"
+        }
+    ],
+    "KeySchema": [
+        {
+            "AttributeName": "UserID",
+            "KeyType": "HASH"
+        },
+        {
+            "AttributeName": "FileUniqueID",
+            "KeyType": "RANGE"
+        }
+    ],
+    "GlobalSecondaryIndexes": [
+        {
+            "IndexName": "FileUniqueIDIndex",
+            "KeySchema": [
+                {
+                    "AttributeName": "FileUniqueID",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "UserID",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "Projection": {
+                "ProjectionType": "ALL"
+            },
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": 1,
+                "WriteCapacityUnits": 1
+            }
+        }
+    ],
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": 1,
+        "WriteCapacityUnits": 1
+    }
+}

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -17,7 +18,13 @@ type Client struct {
 
 // NewClient insantiates new DynamoDB client
 func NewClient() (*Client, error) {
-	sess, err := session.NewSession(&aws.Config{Region: aws.String("eu-north-1")})
+	creds := credentials.NewEnvCredentials()
+	creds.Get()
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("eu-north-1"),
+		Endpoint:    aws.String("http://dynamodb:8000"),
+		Credentials: creds,
+	})
 	if err != nil {
 		return &Client{}, err
 	}
@@ -79,7 +86,10 @@ func (client *Client) PutSticker(sticker Sticker) error {
 }
 
 // StickerBelongsToUser checks if user has a sticker
-func (client *Client) StickerBelongsToUser(userID int, sticker Sticker) (bool, error) {
+func (client *Client) StickerBelongsToUser(
+	userID int,
+	sticker Sticker,
+) (bool, error) {
 	result, err := client.DB.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		IndexName: aws.String("FileUniqueIDIndex"),
