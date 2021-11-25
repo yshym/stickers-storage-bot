@@ -29,6 +29,9 @@ func main() {
 	for update := range updates {
 		message := update.Message
 		if message != nil {
+			if message.Sticker == nil {
+				continue
+			}
 			userID := message.From.ID
 			sticker := db.Sticker{
 				UserID:       userID,
