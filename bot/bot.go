@@ -11,6 +11,8 @@ import (
 	"github.com/yevhenshymotiuk/stickers-storage-bot/db"
 )
 
+const maxStickers = 50
+
 // Bot provides stickers storage bot data
 type Bot struct {
 	DBClient     *db.Client
@@ -70,6 +72,17 @@ func (bot *Bot) HandleSticker(message *tgbotapi.Message) error {
 		logUserPrintf(from, "Delete sticker '%s'", sticker.FileUniqueID)
 		err = bot.DBClient.DeleteSticker(sticker)
 	} else {
+		stickers, err := bot.DBClient.GetStickers(userID)
+		if err != nil {
+			return err
+		}
+		if len(stickers) == maxStickers {
+			msgText := fmt.Sprintf("I am sorry, but only %d stickers can fit into one list", maxStickers)
+			msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
+			msg.ReplyToMessageID = message.MessageID
+			bot.API.Send(msg)
+			return nil
+		}
 		logUserPrintf(from, "Put sticker '%s'", sticker.FileUniqueID)
 		err = bot.DBClient.PutSticker(sticker)
 	}
