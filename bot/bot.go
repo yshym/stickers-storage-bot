@@ -72,12 +72,15 @@ func (bot *Bot) HandleSticker(message *tgbotapi.Message) error {
 		logUserPrintf(from, "Delete sticker '%s'", sticker.FileUniqueID)
 		err = bot.DBClient.DeleteSticker(sticker)
 	} else {
-		stickers, err := bot.DBClient.GetStickers(userID)
+		stickersCount, err := bot.DBClient.CountStickers(userID)
 		if err != nil {
 			return err
 		}
-		if len(stickers) == maxStickers {
-			msgText := fmt.Sprintf("I am sorry, but only %d stickers can fit into one list", maxStickers)
+		if stickersCount == maxStickers {
+			msgText := fmt.Sprintf(
+				"I am sorry, but only %d stickers can fit into one list",
+				maxStickers,
+			)
 			msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 			msg.ReplyToMessageID = message.MessageID
 			bot.API.Send(msg)

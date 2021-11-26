@@ -33,6 +33,23 @@ func NewClient() (*Client, error) {
 	return &Client{DB: database}, nil
 }
 
+// CountStickers counts user's stickers
+func (client *Client) CountStickers(userID int) (int64, error) {
+	result, err := client.DB.Scan(&dynamodb.ScanInput{
+		TableName:        aws.String(os.Getenv("DYNAMODB_TABLE")),
+		FilterExpression: aws.String("#f = :v"),
+		ExpressionAttributeNames: map[string]*string{
+			"#f": aws.String("UserID"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":v": {
+				N: aws.String(strconv.Itoa(userID)),
+			},
+		},
+	})
+	return *result.Count, err
+}
+
 // GetStickers gets a list of stickers by user id
 func (client *Client) GetStickers(userID int) ([]Sticker, error) {
 	stickers := []Sticker{}
