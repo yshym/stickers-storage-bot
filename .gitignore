@@ -16,5 +16,5 @@ serverless.env.yml
 # Deployment artifacts
 .serverless/
 
-# db
-docker/dynamodb
+# database
+*.db
