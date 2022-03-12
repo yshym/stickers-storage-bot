@@ -2,6 +2,7 @@ package db
 
 import (
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -51,8 +52,8 @@ func (client *Client) CountStickers(userID int) (int64, error) {
 }
 
 // GetStickers gets a list of stickers by user id
-func (client *Client) GetStickers(userID int) ([]Sticker, error) {
-	stickers := []Sticker{}
+func (client *Client) GetStickers(userID int) (Stickers, error) {
+	stickers := Stickers{}
 
 	result, err := client.DB.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
@@ -81,6 +82,8 @@ func (client *Client) GetStickers(userID int) ([]Sticker, error) {
 		return stickers, err
 	}
 
+	sort.Sort(stickers)
+
 	return stickers, nil
 }
 
@@ -102,6 +105,33 @@ func (client *Client) PutSticker(sticker Sticker) error {
 	return nil
 }
 
+// UseSticker increments UseCount of a sticker
+func (client *Client) UseSticker(sticker Sticker) error {
+	_, err := client.DB.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
+		Key: map[string]*dynamodb.AttributeValue{
+			"UserID": {
+				N: aws.String(strconv.Itoa(sticker.UserID)),
+			},
+			"FileUniqueID": {
+				S: aws.String(sticker.FileUniqueID),
+			},
+		},
+		UpdateExpression: aws.String("set UseCount = UseCount + :num"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":num": {
+				N: aws.String("1"),
+			},
+		},
+		ReturnValues: aws.String("NONE"),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // StickerBelongsToUser checks if user has a sticker
 func (client *Client) StickerBelongsToUser(
 	userID int,
@@ -109,21 +139,20 @@ func (client *Client) StickerBelongsToUser(
 ) (bool, error) {
 	result, err := client.DB.Query(&dynamodb.QueryInput{
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
-		IndexName: aws.String("FileUniqueIDIndex"),
 		KeyConditions: map[string]*dynamodb.Condition{
-			"FileUniqueID": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						S: aws.String(sticker.FileUniqueID),
-					},
-				},
-			},
 			"UserID": {
 				ComparisonOperator: aws.String("EQ"),
 				AttributeValueList: []*dynamodb.AttributeValue{
 					{
 						N: aws.String(strconv.Itoa(userID)),
+					},
+				},
+			},
+			"FileUniqueID": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(sticker.FileUniqueID),
 					},
 				},
 			},

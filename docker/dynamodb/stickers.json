@@ -27,10 +27,6 @@
                 {
                     "AttributeName": "FileUniqueID",
                     "KeyType": "HASH"
-                },
-                {
-                    "AttributeName": "UserID",
-                    "KeyType": "RANGE"
                 }
             ],
             "Projection": {

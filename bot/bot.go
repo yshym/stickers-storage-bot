@@ -9,6 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/db"
+	"github.com/yevhenshymotiuk/stickers-storage-bot/helpers"
 )
 
 const maxStickers = 50
@@ -58,6 +59,7 @@ func (bot *Bot) HandleSticker(message *tgbotapi.Message) error {
 		UserID:       userID,
 		FileUniqueID: message.Sticker.FileUniqueID,
 		FileID:       message.Sticker.FileID,
+		Timestamp:    helpers.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	stickerBelongsToUser, err := bot.DBClient.StickerBelongsToUser(
@@ -134,11 +136,41 @@ func (bot *Bot) HandleQuery(inlineQuery *tgbotapi.InlineQuery) error {
 	return nil
 }
 
+// HandleStickerChoice handles sticker choice
+func (bot *Bot) HandleStickerChoice(
+	choiceInlineResult *tgbotapi.ChosenInlineResult,
+) error {
+	from := choiceInlineResult.From
+	userID := from.ID
+	choiceID, err := strconv.Atoi(choiceInlineResult.ResultID)
+	if err != nil {
+		return err
+	}
+
+	stickers, err := bot.DBClient.GetStickers(userID)
+	if err != nil {
+		return err
+	}
+
+	sticker := stickers[choiceID]
+	logUserPrintf(from, "Choose sticker '%s'", sticker.FileUniqueID)
+
+	err = bot.DBClient.UseSticker(sticker)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // HandleUpdate handles an update
 func (bot *Bot) HandleUpdate(update *tgbotapi.Update) error {
 	message := update.Message
+	choiceInlineResult := update.ChosenInlineResult
 	if message != nil && message.Sticker != nil {
 		return bot.HandleSticker(message)
+	} else if choiceInlineResult != nil {
+		return bot.HandleStickerChoice(choiceInlineResult)
 	} else if update.InlineQuery != nil {
 		return bot.HandleQuery(update.InlineQuery)
 	}
