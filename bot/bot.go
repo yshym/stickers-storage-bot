@@ -163,12 +163,47 @@ func (bot *Bot) HandleStickerChoice(
 	return nil
 }
 
+// HandleCommand handles 'help' command
+func (bot *Bot) HandleHelpCommand(message *tgbotapi.Message) error {
+	helpText := fmt.Sprintf("Store stickers:\n" +
+		"Send a sticker to save it, send second time to delete\n\n" +
+		"View stickers:\n" +
+		"- call a bot by typing at sign and its username in the text input field in any chat (@%s)\n" +
+		"- choose a sticker you want to send\n", bot.API.Self.UserName)
+	msg := tgbotapi.NewMessage(message.Chat.ID, helpText)
+	_, err := bot.API.Send(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// HandleCommand handles a command
+func (bot *Bot) HandleCommand(message *tgbotapi.Message) error {
+	from := message.From
+	command := message.Command()
+
+	logUserPrintf(from, "Call command '%s'", command)
+
+	switch command {
+	case "help":
+		return bot.HandleHelpCommand(message)
+	}
+
+	return nil
+}
+
 // HandleUpdate handles an update
 func (bot *Bot) HandleUpdate(update *tgbotapi.Update) error {
 	message := update.Message
 	choiceInlineResult := update.ChosenInlineResult
-	if message != nil && message.Sticker != nil {
-		return bot.HandleSticker(message)
+	if message != nil {
+		if message.Sticker != nil {
+			return bot.HandleSticker(message)
+		} else if message.IsCommand() {
+			return bot.HandleCommand(message)
+		}
 	} else if choiceInlineResult != nil {
 		return bot.HandleStickerChoice(choiceInlineResult)
 	} else if update.InlineQuery != nil {
