@@ -15,7 +15,7 @@ func LoadLocation() (*time.Location, error) {
 func Now() time.Time {
 	l, err := LoadLocation()
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 
 	return time.Now().In(l)
