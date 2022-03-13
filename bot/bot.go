@@ -184,9 +184,6 @@ func (bot *Bot) CheckForUpdates() {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
 	for update := range updates {
-		err := bot.HandleUpdate(&update)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-		}
+		go bot.HandleUpdate(&update)
 	}
 }
