@@ -8,3 +8,6 @@ bin/
 
 # database
 *.db
+
+# log
+*.log
