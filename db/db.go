@@ -35,7 +35,7 @@ func NewClient() (*Client, error) {
 }
 
 // CountStickers counts user's stickers
-func (client *Client) CountStickers(userID int) (int64, error) {
+func (client *Client) CountStickers(userID int64) (int64, error) {
 	result, err := client.DB.Scan(&dynamodb.ScanInput{
 		TableName:        aws.String(os.Getenv("DYNAMODB_TABLE")),
 		FilterExpression: aws.String("#f = :v"),
@@ -44,7 +44,7 @@ func (client *Client) CountStickers(userID int) (int64, error) {
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":v": {
-				N: aws.String(strconv.Itoa(userID)),
+				N: aws.String(strconv.Itoa(int(userID))),
 			},
 		},
 	})
@@ -52,7 +52,7 @@ func (client *Client) CountStickers(userID int) (int64, error) {
 }
 
 // GetStickers gets a list of stickers by user id
-func (client *Client) GetStickers(userID int) (Stickers, error) {
+func (client *Client) GetStickers(userID int64) (Stickers, error) {
 	stickers := Stickers{}
 
 	result, err := client.DB.Query(&dynamodb.QueryInput{
@@ -62,7 +62,7 @@ func (client *Client) GetStickers(userID int) (Stickers, error) {
 				ComparisonOperator: aws.String("EQ"),
 				AttributeValueList: []*dynamodb.AttributeValue{
 					{
-						N: aws.String(strconv.Itoa(userID)),
+						N: aws.String(strconv.Itoa(int(userID))),
 					},
 				},
 			},
@@ -111,7 +111,7 @@ func (client *Client) UseSticker(sticker Sticker) error {
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		Key: map[string]*dynamodb.AttributeValue{
 			"UserID": {
-				N: aws.String(strconv.Itoa(sticker.UserID)),
+				N: aws.String(strconv.Itoa(int(sticker.UserID))),
 			},
 			"FileUniqueID": {
 				S: aws.String(sticker.FileUniqueID),
@@ -134,7 +134,7 @@ func (client *Client) UseSticker(sticker Sticker) error {
 
 // StickerBelongsToUser checks if user has a sticker
 func (client *Client) StickerBelongsToUser(
-	userID int,
+	userID int64,
 	sticker Sticker,
 ) (bool, error) {
 	result, err := client.DB.Query(&dynamodb.QueryInput{
@@ -144,7 +144,7 @@ func (client *Client) StickerBelongsToUser(
 				ComparisonOperator: aws.String("EQ"),
 				AttributeValueList: []*dynamodb.AttributeValue{
 					{
-						N: aws.String(strconv.Itoa(userID)),
+						N: aws.String(strconv.Itoa(int(userID))),
 					},
 				},
 			},
@@ -171,7 +171,7 @@ func (client *Client) DeleteSticker(sticker Sticker) error {
 		TableName: aws.String(os.Getenv("DYNAMODB_TABLE")),
 		Key: map[string]*dynamodb.AttributeValue{
 			"UserID": {
-				N: aws.String(strconv.Itoa(sticker.UserID)),
+				N: aws.String(strconv.Itoa(int(sticker.UserID))),
 			},
 			"FileUniqueID": {
 				S: aws.String(sticker.FileUniqueID),

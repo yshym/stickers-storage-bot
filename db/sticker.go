@@ -3,7 +3,7 @@ package db
 
 // Sticker provides info about sticker
 type Sticker struct {
-	UserID       int
+	UserID       int64
 	FileUniqueID string
 	FileID       string
 	Timestamp    string

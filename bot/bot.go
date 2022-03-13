@@ -6,8 +6,9 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/db"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/helpers"
 )
@@ -126,10 +127,12 @@ func (bot *Bot) HandleQuery(inlineQuery *tgbotapi.InlineQuery) error {
 
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: inlineQuery.ID,
+		IsPersonal:    true,
+		CacheTime:     0,
 		Results:       resultCachedStickers,
 	}
 
-	if _, err := bot.API.AnswerInlineQuery(inlineConf); err != nil {
+	if _, err := bot.API.Request(inlineConf); err != nil {
 		return err
 	}
 
@@ -165,12 +168,20 @@ func (bot *Bot) HandleStickerChoice(
 
 // HandleCommand handles 'help' command
 func (bot *Bot) HandleHelpCommand(message *tgbotapi.Message) error {
-	helpText := fmt.Sprintf("Store stickers:\n" +
-		"Send a sticker to save it, send second time to delete\n\n" +
-		"View stickers:\n" +
-		"- call a bot by typing at sign and its username in the text input field in any chat (@%s)\n" +
-		"- choose a sticker you want to send\n", bot.API.Self.UserName)
+	botUsernameTag := fmt.Sprintf("@%s", bot.API.Self.UserName)
+	helpText := fmt.Sprintf("Store stickers:\n"+
+		"Send a sticker to save it, send second time to delete\n\n"+
+		"View stickers:\n"+
+		"- call a bot by typing at sign and its username in the text input field in any chat (%s)\n"+
+		"- choose a sticker you want to send\n", botUsernameTag)
 	msg := tgbotapi.NewMessage(message.Chat.ID, helpText)
+	msg.Entities = []tgbotapi.MessageEntity{
+		{
+			Type:   "code",
+			Offset: strings.Index(helpText, botUsernameTag),
+			Length: len(botUsernameTag),
+		},
+	}
 	_, err := bot.API.Send(msg)
 	if err != nil {
 		return err
@@ -214,10 +225,7 @@ func (bot *Bot) HandleUpdate(update *tgbotapi.Update) error {
 
 // CheckForUpdates starts checking for updates
 func (bot *Bot) CheckForUpdates() {
-	updates, err := bot.API.GetUpdatesChan(*bot.UpdateConfig)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-	}
+	updates := bot.API.GetUpdatesChan(*bot.UpdateConfig)
 	for update := range updates {
 		go bot.HandleUpdate(&update)
 	}
