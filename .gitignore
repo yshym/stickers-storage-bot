@@ -1,20 +1,10 @@
-.DS_Store
-.idea
-*.log
-tmp/
-
-# env
-.env
-.envrc
-
-# Binary executables
+# bin
 bin/
 
-# Environment variables for serverless framework
-serverless.env.yml
-
-# Deployment artifacts
-.serverless/
+# env
+.direnv/
+.env
+.envrc
 
 # database
 *.db
