@@ -128,7 +128,7 @@ func (bot *Bot) HandleQuery(inlineQuery *tgbotapi.InlineQuery) error {
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: inlineQuery.ID,
 		IsPersonal:    true,
-		CacheTime:     0,
+		CacheTime:     1,
 		Results:       resultCachedStickers,
 	}
 
