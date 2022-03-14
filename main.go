@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/yevhenshymotiuk/stickers-storage-bot/bot"
+	"github.com/yshym/stickers-storage-bot/bot"
 )
 
 func main() {

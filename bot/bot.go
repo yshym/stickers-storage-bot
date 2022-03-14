@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	tgbotapi "github.com/yshym/telegram-bot-api/v5"
-	"github.com/yevhenshymotiuk/stickers-storage-bot/db"
-	"github.com/yevhenshymotiuk/stickers-storage-bot/helpers"
+	"github.com/yshym/stickers-storage-bot/db"
+	"github.com/yshym/stickers-storage-bot/helpers"
 )
 
 const maxStickers = 50

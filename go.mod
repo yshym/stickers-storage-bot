@@ -1,4 +1,4 @@
-module github.com/yevhenshymotiuk/stickers-storage-bot
+module github.com/yshym/stickers-storage-bot
 
 go 1.14
 

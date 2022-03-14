@@ -2,7 +2,7 @@
   description = "Stickers storage bot";
 
   inputs = {
-    nixpkgs.url = "github:yevhenshymotiuk/nixpkgs/release-21.11";
+    nixpkgs.url = "github:yshym/nixpkgs/release-21.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
