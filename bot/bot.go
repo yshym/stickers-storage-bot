@@ -210,21 +210,24 @@ func (bot *Bot) HandleCommand(message *tgbotapi.Message) error {
 }
 
 // HandleUpdate handles an update
-func (bot *Bot) HandleUpdate(update *tgbotapi.Update) error {
+func (bot *Bot) HandleUpdate(update *tgbotapi.Update) {
+	var err error = nil
 	message := update.Message
 	choiceInlineResult := update.ChosenInlineResult
 	if message != nil {
 		if message.Sticker != nil {
-			return bot.HandleSticker(message)
+			err = bot.HandleSticker(message)
 		} else if message.IsCommand() {
-			return bot.HandleCommand(message)
+			err = bot.HandleCommand(message)
 		}
 	} else if choiceInlineResult != nil {
-		return bot.HandleStickerChoice(choiceInlineResult)
+		err = bot.HandleStickerChoice(choiceInlineResult)
 	} else if update.InlineQuery != nil {
-		return bot.HandleQuery(update.InlineQuery)
+		err = bot.HandleQuery(update.InlineQuery)
 	}
-	return nil
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // CheckForUpdates starts checking for updates
