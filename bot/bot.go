@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/yshym/telegram-bot-api/v5"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/db"
 	"github.com/yevhenshymotiuk/stickers-storage-bot/helpers"
 )
@@ -128,7 +128,7 @@ func (bot *Bot) HandleQuery(inlineQuery *tgbotapi.InlineQuery) error {
 	inlineConf := tgbotapi.InlineConfig{
 		InlineQueryID: inlineQuery.ID,
 		IsPersonal:    true,
-		CacheTime:     1,
+		CacheTime:     0,
 		Results:       resultCachedStickers,
 	}
 
