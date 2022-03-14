@@ -155,6 +155,10 @@ func (bot *Bot) HandleStickerChoice(
 		return err
 	}
 
+	// Choice inline result update got after sticker was deleted
+	if choiceID >= len(stickers) {
+		return nil
+	}
 	sticker := stickers[choiceID]
 	logUserPrintf(from, "Choose sticker '%s'", sticker.FileUniqueID)
 
